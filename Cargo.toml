@@ -1,0 +1,6 @@
+[package]
+name = "bucket"
+version = "0.1.0"
+authors = ["Steve Bentley <steve@codebazaar.co.uk>"]
+
+[dependencies]
