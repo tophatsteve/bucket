@@ -10,3 +10,5 @@ matrix:
     - rust: beta
   fast_finish: true
   
+notifications:
+    slack: codebazaar:dfUey8QKvSJBHhdpNaFBSjMH
