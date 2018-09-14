@@ -24,7 +24,7 @@ fn main() {
     // Add a path to be watched. All files and directories at that path and
     // below will be monitored for changes.
 
-    match watcher.watch("c:\\bucket", RecursiveMode::Recursive) {
+    match watcher.watch("/bucket", RecursiveMode::Recursive) {
         Ok(_) => (),
         Err(e) => {
             capture_error(&err_msg(e.to_string()));
