@@ -4,3 +4,6 @@ version = "0.1.0"
 authors = ["Steve Bentley <steve@codebazaar.co.uk>"]
 
 [dependencies]
+notify = "4.0.0"
+sentry = "0.6.0"
+failure = "0.1.2"
