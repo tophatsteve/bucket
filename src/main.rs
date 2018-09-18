@@ -38,10 +38,10 @@ fn main() {
         }
     }
 
-    event_loop(rx);
+    event_loop(&rx);
 }
 
-fn event_loop(rx: Receiver<DebouncedEvent>) {
+fn event_loop(rx: &Receiver<DebouncedEvent>) {
     loop {
         match rx.recv() {
             Ok(event) => println!("{:?}", event),
