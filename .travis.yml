@@ -38,3 +38,4 @@ after_success:
 
 notifications:
     slack: codebazaar:dfUey8QKvSJBHhdpNaFBSjMH
+
