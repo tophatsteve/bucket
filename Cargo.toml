@@ -7,3 +7,6 @@ authors = ["Steve Bentley <steve@codebazaar.co.uk>"]
 notify = "4.0.0"
 sentry = "0.6.0"
 failure = "0.1.2"
+
+[profile.release]
+debug = true

@@ -6,12 +6,15 @@ extern crate notify;
 extern crate sentry;
 
 mod event_handlers;
+mod storage;
 
 use event_handlers::{CreatedEvent, EventHandler, RemovedEvent, UpdatedEvent};
 use failure::err_msg;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
 use sentry::integrations::failure::capture_error;
 use sentry::integrations::panic::register_panic_handler;
+use std::borrow::Cow;
+use std::env;
 use std::sync::mpsc::{channel, Receiver};
 use std::time::Duration;
 
@@ -20,22 +23,12 @@ struct Config {
 }
 
 fn main() {
-    // uses SENTRY_DSN to create connection
-    let _guard = sentry::init(());
+    sentry_config();
     register_panic_handler();
 
     let config = get_default_config();
-    let event_handler = event_handlers::EventHandler::new();
-
-    // Create a channel to receive the events.
     let (tx, rx) = channel();
-
-    // Create a watcher object, delivering debounced events.
-    // The notification back-end is selected based on the platform.
     let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
-
-    // Add a path to be watched. All files and directories at that path and
-    // below will be monitored for changes.
 
     match watcher.watch(&config.root_folder, RecursiveMode::Recursive) {
         Ok(_) => (),
@@ -48,18 +41,23 @@ fn main() {
     event_loop(&rx);
 }
 
+fn sentry_config() {
+    let sentry_dsn = env::var("SENTRY_DSN").unwrap();
+    let _guard = sentry::init((
+        sentry_dsn,
+        sentry::ClientOptions {
+            release: Some(Cow::from("v0.1.0")),
+            ..Default::default()
+        },
+    ));
+}
+
 fn event_loop(rx: &Receiver<DebouncedEvent>) {
-    let evts = initialise_event_handlers();
-    loop {
-        match rx.recv() {
-            Ok(event) => {
-                route_event(&event, &evts);
-            }
-            Err(e) => {
-                capture_error(&err_msg(e.to_string()));
-                println!("watch error: {:?}", e);
-            }
-        }
+    let storage = storage::AzureStorage {};
+    let evts = initialise_event_handlers(&storage);
+
+    for event in rx {
+        route_event(&event, &evts);
     }
 }
 
@@ -78,8 +76,9 @@ fn get_default_config() -> Config {
     }
 }
 
-fn initialise_event_handlers() -> EventHandler<'static> {
-    let mut e = EventHandler::new();
+// storage needs to live as long as returned EventHandler
+fn initialise_event_handlers<'a>(storage: &'a storage::Storage) -> EventHandler<'a> {
+    let mut e = EventHandler::new(storage);
     e.add("create", &CreatedEvent {});
     e.add("remove", &RemovedEvent {});
     e.add("update", &UpdatedEvent {});

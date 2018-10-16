@@ -1,16 +1,19 @@
 #![allow(dead_code)]
 
+use super::storage;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 pub struct EventHandler<'a> {
     event_handlers: HashMap<&'a str, &'a PathEventHandler>,
+    storage: &'a storage::Storage,
 }
 
 impl<'a> EventHandler<'a> {
-    pub fn new() -> EventHandler<'a> {
+    pub fn new(storage: &'a storage::Storage) -> EventHandler<'a> {
         EventHandler {
             event_handlers: HashMap::new(),
+            storage: storage,
         }
     }
 
