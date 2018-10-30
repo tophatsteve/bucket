@@ -64,7 +64,7 @@ fn get_default_config() -> Config {
 }
 
 // storage needs to live as long as returned EventHandler
-fn initialise_event_handlers<'a>(storage: &'a storage::Storage) -> EventHandler<'a> {
+fn initialise_event_handlers(storage: &storage::Storage) -> EventHandler {
     let mut e = EventHandler::new(storage);
     e.add("create", &CreatedEvent {});
     e.add("remove", &RemovedEvent {});

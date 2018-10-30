@@ -11,7 +11,7 @@ impl<'a> EventHandler<'a> {
     pub fn new(storage: &'a storage::Storage) -> EventHandler<'a> {
         EventHandler {
             event_handlers: HashMap::new(),
-            storage: storage,
+            storage,
         }
     }
 

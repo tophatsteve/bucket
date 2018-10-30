@@ -83,9 +83,9 @@ fn get_blob_name(p: &PathBuf) -> String {
     utf8_percent_encode(stripped.to_str().unwrap(), DEFAULT_ENCODE_SET).collect()
 }
 
-fn get_file_contents(p: &PathBuf) -> Box<Vec<u8>> {
+fn get_file_contents(p: &PathBuf) -> Vec<u8> {
     let mut buffer = Vec::new();
     let mut file = File::open(p).unwrap();
     file.read_to_end(&mut buffer).unwrap();
-    Box::new(buffer)
+    buffer
 }
