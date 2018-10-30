@@ -1,9 +1,19 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+extern crate azure_sdk_for_rust;
+extern crate env_logger;
 extern crate failure;
+extern crate futures;
+extern crate hyper;
+extern crate hyper_tls;
 extern crate notify;
 extern crate sentry;
+#[macro_use]
+extern crate log;
+extern crate md5;
+extern crate tokio_core;
+extern crate url;
 
 mod bucket;
 mod event_handlers;
@@ -18,6 +28,7 @@ struct Config {
 }
 
 fn main() {
+    env_logger::init();
     sentry_config();
     register_panic_handler();
 
@@ -25,7 +36,9 @@ fn main() {
 }
 
 fn sentry_config() {
-    let sentry_dsn = env::var("SENTRY_DSN").unwrap();
+    trace!("sentry_config()");
+    let sentry_dsn = env::var("SENTRY_DSN").expect("Set env variable SENTRY_DSN");
+    trace!("sentry dsn - {}", sentry_dsn);
     let _guard = sentry::init((
         sentry_dsn,
         sentry::ClientOptions {

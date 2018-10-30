@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::storage;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -23,7 +21,7 @@ impl<'a> EventHandler<'a> {
 
     pub fn call(&self, event_name: &str, path: &PathBuf) {
         if let Some(f) = self.event_handlers.get(event_name) {
-            println!("Calling event for {}", event_name);
+            trace!("Calling event for {}", event_name);
             f.handle(path, self.storage);
         }
     }
@@ -45,7 +43,7 @@ pub struct RemovedEvent {}
 
 impl PathEventHandler for RemovedEvent {
     fn handle(&self, path: &PathBuf, _storage: &storage::Storage) {
-        println!("Called RemovedEvent with {:?}", path);
+        trace!("Called RemovedEvent with {:?}", path);
     }
 }
 
@@ -53,7 +51,7 @@ pub struct UpdatedEvent {}
 
 impl PathEventHandler for UpdatedEvent {
     fn handle(&self, path: &PathBuf, _storage: &storage::Storage) {
-        println!("Called UpdatedEvent with {:?}", path);
+        trace!("Called UpdatedEvent with {:?}", path);
     }
 }
 
