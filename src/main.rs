@@ -1,87 +1,49 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+extern crate azure_sdk_for_rust;
+extern crate env_logger;
 extern crate failure;
+extern crate futures;
+extern crate hyper;
+extern crate hyper_tls;
 extern crate notify;
 extern crate sentry;
+#[macro_use]
+extern crate log;
+extern crate md5;
+extern crate tokio_core;
+extern crate url;
 
+mod bucket;
 mod event_handlers;
+mod storage;
 
-use event_handlers::{CreatedEvent, EventHandler, RemovedEvent, UpdatedEvent};
-use failure::err_msg;
-use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
-use sentry::integrations::failure::capture_error;
 use sentry::integrations::panic::register_panic_handler;
-use std::sync::mpsc::{channel, Receiver};
-use std::time::Duration;
+use std::borrow::Cow;
+use std::env;
 
 struct Config {
     root_folder: String,
 }
 
 fn main() {
-    // uses SENTRY_DSN to create connection
-    let _guard = sentry::init(());
+    env_logger::init();
+    sentry_config();
     register_panic_handler();
 
-    let config = get_default_config();
-    let event_handler = event_handlers::EventHandler::new();
-
-    // Create a channel to receive the events.
-    let (tx, rx) = channel();
-
-    // Create a watcher object, delivering debounced events.
-    // The notification back-end is selected based on the platform.
-    let mut watcher = watcher(tx, Duration::from_secs(10)).unwrap();
-
-    // Add a path to be watched. All files and directories at that path and
-    // below will be monitored for changes.
-
-    match watcher.watch(&config.root_folder, RecursiveMode::Recursive) {
-        Ok(_) => (),
-        Err(e) => {
-            capture_error(&err_msg(e.to_string()));
-            println!("watch error: {:?}", e);
-        }
-    }
-
-    event_loop(&rx);
+    bucket::start();
 }
 
-fn event_loop(rx: &Receiver<DebouncedEvent>) {
-    let evts = initialise_event_handlers();
-    loop {
-        match rx.recv() {
-            Ok(event) => {
-                route_event(&event, &evts);
-            }
-            Err(e) => {
-                capture_error(&err_msg(e.to_string()));
-                println!("watch error: {:?}", e);
-            }
-        }
-    }
-}
-
-fn route_event(evt: &DebouncedEvent, evts: &EventHandler) {
-    match evt {
-        DebouncedEvent::Create(p) => evts.call("create", p),
-        DebouncedEvent::Remove(p) => evts.call("remove", p),
-        DebouncedEvent::Write(p) => evts.call("update", p),
-        _ => (), // only interested in the Create, Remove and Write events
-    }
-}
-
-fn get_default_config() -> Config {
-    Config {
-        root_folder: String::from("/bucket"),
-    }
-}
-
-fn initialise_event_handlers() -> EventHandler<'static> {
-    let mut e = EventHandler::new();
-    e.add("create", &CreatedEvent {});
-    e.add("remove", &RemovedEvent {});
-    e.add("update", &UpdatedEvent {});
-    e
+fn sentry_config() {
+    trace!("sentry_config()");
+    let sentry_dsn = env::var("SENTRY_DSN").expect("Set env variable SENTRY_DSN");
+    trace!("sentry dsn - {}", sentry_dsn);
+    let _guard = sentry::init((
+        sentry_dsn,
+        sentry::ClientOptions {
+            release: Some(Cow::from("v0.1.0")),
+            ..Default::default()
+        },
+    ));
 }
