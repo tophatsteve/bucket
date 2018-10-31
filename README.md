@@ -1,5 +1,8 @@
 # bucket
-A Dropbox style service written in Rust and backed by Azure blob storage
+A Dropbox style service written in Rust and backed by Azure blob storage.
+
+[![Build Status](https://travis-ci.com/tophatsteve/bucket.svg?branch=master)](https://travis-ci.com/tophatsteve/bucket)
+[![Coverage Status](https://coveralls.io/repos/github/tophatsteve/bucket/badge.svg?branch=master)](https://coveralls.io/github/tophatsteve/bucket?branch=master)
 
 ## Setup
 
