@@ -17,6 +17,7 @@ extern crate url;
 
 mod bucket;
 mod event_handlers;
+mod file_system;
 mod storage;
 
 use sentry::integrations::panic::register_panic_handler;

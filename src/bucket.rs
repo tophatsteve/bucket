@@ -3,6 +3,7 @@ extern crate notify;
 extern crate sentry;
 
 use super::event_handlers::{CreatedEvent, EventHandler, RemovedEvent, UpdatedEvent};
+use super::file_system;
 use super::storage;
 use failure::err_msg;
 use notify::{watcher, DebouncedEvent, RecursiveMode, Watcher};
@@ -35,7 +36,8 @@ pub fn start() {
 
 fn event_loop(rx: &Receiver<DebouncedEvent>, config: &Config) {
     let storage = storage::AzureStorage::new(config);
-    let evts = initialise_event_handlers(&storage);
+    let file_system = file_system::LocalFileSystem::new(config);
+    let evts = initialise_event_handlers(&storage, &file_system);
 
     for event in rx {
         route_event(&event, &evts);
@@ -63,9 +65,11 @@ fn get_default_config() -> Config {
     }
 }
 
-// storage needs to live as long as returned EventHandler
-fn initialise_event_handlers(storage: &storage::Storage) -> EventHandler {
-    let mut e = EventHandler::new(storage);
+fn initialise_event_handlers<'a>(
+    storage: &'a storage::Storage,
+    file_system: &'a file_system::FileSystem,
+) -> EventHandler<'a> {
+    let mut e = EventHandler::new(storage, file_system);
     e.add("create", &CreatedEvent {});
     e.add("remove", &RemovedEvent {});
     e.add("update", &UpdatedEvent {});
@@ -88,8 +92,33 @@ mod tests {
     }
 
     impl storage::Storage for MockStorage {
-        fn upload(&self, p: &PathBuf) {}
+        fn upload(&self, blob_name: &str, data: Vec<u8>) {}
         fn download(&self, p: &PathBuf) {}
+    }
+
+    struct MockFileSystem {
+        get_blob_name_called: RefCell<bool>,
+        get_file_contents_called: RefCell<bool>,
+    }
+
+    impl MockFileSystem {
+        fn new() -> MockFileSystem {
+            MockFileSystem {
+                get_blob_name_called: RefCell::new(false),
+                get_file_contents_called: RefCell::new(false),
+            }
+        }
+    }
+
+    impl file_system::FileSystem for MockFileSystem {
+        fn get_blob_name(&self, p: &PathBuf) -> String {
+            *self.get_blob_name_called.borrow_mut() = true;
+            String::from("")
+        }
+        fn get_file_contents(&self, p: &PathBuf) -> Vec<u8> {
+            *self.get_file_contents_called.borrow_mut() = true;
+            Vec::new()
+        }
     }
 
     struct MockPathEventHandler {
@@ -105,18 +134,24 @@ mod tests {
     }
 
     impl PathEventHandler for MockPathEventHandler {
-        fn handle(&self, _path: &PathBuf, _storage: &storage::Storage) {
+        fn handle(
+            &self,
+            _path: &PathBuf,
+            _storage: &storage::Storage,
+            _file_system: &file_system::FileSystem,
+        ) {
             *self.called.borrow_mut() = true;
         }
     }
 
     #[test]
     fn test_create_event_calls_create_handler() {
+        let mock_file_system = MockFileSystem::new();
         let mock_storage = MockStorage::new();
         let mock_create_handler = MockPathEventHandler::new();
         let mock_remove_handler = MockPathEventHandler::new();
         let mock_update_handler = MockPathEventHandler::new();
-        let mut e = EventHandler::new(&mock_storage);
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
         e.add("create", &mock_create_handler);
         e.add("remove", &mock_remove_handler);
         e.add("update", &mock_update_handler);
@@ -130,11 +165,12 @@ mod tests {
 
     #[test]
     fn test_remove_event_calls_remove_handler() {
+        let mock_file_system = MockFileSystem::new();
         let mock_storage = MockStorage::new();
         let mock_create_handler = MockPathEventHandler::new();
         let mock_remove_handler = MockPathEventHandler::new();
         let mock_update_handler = MockPathEventHandler::new();
-        let mut e = EventHandler::new(&mock_storage);
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
         e.add("create", &mock_create_handler);
         e.add("remove", &mock_remove_handler);
         e.add("update", &mock_update_handler);
@@ -148,11 +184,12 @@ mod tests {
 
     #[test]
     fn test_write_event_calls_update_handler() {
+        let mock_file_system = MockFileSystem::new();
         let mock_storage = MockStorage::new();
         let mock_create_handler = MockPathEventHandler::new();
         let mock_remove_handler = MockPathEventHandler::new();
         let mock_update_handler = MockPathEventHandler::new();
-        let mut e = EventHandler::new(&mock_storage);
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
         e.add("create", &mock_create_handler);
         e.add("remove", &mock_remove_handler);
         e.add("update", &mock_update_handler);
@@ -166,11 +203,12 @@ mod tests {
 
     #[test]
     fn test_ignored_event_does_not_call_event_handler() {
+        let mock_file_system = MockFileSystem::new();
         let mock_storage = MockStorage::new();
         let mock_create_handler = MockPathEventHandler::new();
         let mock_remove_handler = MockPathEventHandler::new();
         let mock_update_handler = MockPathEventHandler::new();
-        let mut e = EventHandler::new(&mock_storage);
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
         e.add("create", &mock_create_handler);
         e.add("remove", &mock_remove_handler);
         e.add("update", &mock_update_handler);
