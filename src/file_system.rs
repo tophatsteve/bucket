@@ -37,3 +37,39 @@ impl LocalFileSystem {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_path_conversion_windows_format() {
+        let config = bucket::Config {
+            root_folder: String::from("C:/bucket"),
+            storage_account: String::from(""),
+            account_key: String::from(""),
+            root_container_name: String::from(""),
+        };
+
+        let fs = LocalFileSystem::new(&config);
+        let path = PathBuf::from("C:/bucket\\folder1\\folder2\\file.txt");
+        let blob_name = fs.get_blob_name(&path);
+        assert_eq!("folder1/folder2/file.txt", blob_name);
+    }
+
+    #[test]
+    fn test_path_conversion_unix_format() {
+        let config = bucket::Config {
+            root_folder: String::from("/bucket"),
+            storage_account: String::from(""),
+            account_key: String::from(""),
+            root_container_name: String::from(""),
+        };
+
+        let fs = LocalFileSystem::new(&config);
+        let path = PathBuf::from("/bucket/folder1/folder2/file.txt");
+        let blob_name = fs.get_blob_name(&path);
+        assert_eq!("folder1/folder2/file.txt", blob_name);
+    }
+}
