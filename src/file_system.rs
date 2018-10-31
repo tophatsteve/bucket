@@ -43,6 +43,7 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
+    #[cfg(target_os = "windows")]
     #[test]
     fn test_path_conversion_windows_format() {
         let config = bucket::Config {
