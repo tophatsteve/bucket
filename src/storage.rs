@@ -1,4 +1,5 @@
 use super::bucket;
+use azure_sdk_for_rust::core::DeleteSnapshotsMethod;
 use azure_sdk_for_rust::prelude::*;
 use futures::future::*;
 use std::path::PathBuf;
@@ -7,6 +8,7 @@ use tokio_core::reactor::Core;
 pub trait Storage {
     fn upload(&self, &str, Vec<u8>);
     fn download(&self, &PathBuf);
+    fn delete(&self, &str);
 }
 
 pub struct AzureStorage {
@@ -37,6 +39,22 @@ impl Storage for AzureStorage {
 
     fn download(&self, p: &PathBuf) {
         trace!("Downloading - {:?}", p);
+    }
+
+    fn delete(&self, blob_name: &str) {
+        trace!("Deleting - {:?}", blob_name);
+
+        let mut core = Core::new().unwrap();
+        let client = Client::new(&self.storage_account, &self.account_key).unwrap();
+
+        let future = client
+            .delete_blob()
+            .with_container_name(&self.root_container_name)
+            .with_blob_name(blob_name)
+            .with_delete_snapshots_method(DeleteSnapshotsMethod::Include)
+            .finalize();
+
+        core.run(future).unwrap();
     }
 }
 
