@@ -66,10 +66,11 @@ impl PathEventHandler for RemovedEvent {
     fn handle(
         &self,
         path: &PathBuf,
-        _storage: &storage::Storage,
-        _file_system: &file_system::FileSystem,
+        storage: &storage::Storage,
+        file_system: &file_system::FileSystem,
     ) {
-        trace!("Called RemovedEvent with {:?}", path);
+        let blob_name = file_system.get_blob_name(path);
+        storage.delete(&blob_name);
     }
 }
 
@@ -94,6 +95,7 @@ mod tests {
     struct MockStorage {
         upload_called: RefCell<bool>,
         download_called: RefCell<bool>,
+        delete_called: RefCell<bool>,
     }
 
     impl MockStorage {
@@ -101,6 +103,7 @@ mod tests {
             MockStorage {
                 upload_called: RefCell::new(false),
                 download_called: RefCell::new(false),
+                delete_called: RefCell::new(false),
             }
         }
     }
@@ -111,6 +114,9 @@ mod tests {
         }
         fn download(&self, p: &PathBuf) {
             *self.download_called.borrow_mut() = true;
+        }
+        fn delete(&self, blob_name: &str) {
+            *self.delete_called.borrow_mut() = true;
         }
     }
 
@@ -209,5 +215,17 @@ mod tests {
         e.call("create", &PathBuf::from("/"));
 
         assert_eq!(*mock_storage.upload_called.borrow(), false);
+    }
+
+    #[test]
+    fn test_remove_event_calls_storage_delete() {
+        let mock_file_system = MockFileSystem::new();
+        let mock_storage = MockStorage::new();
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
+
+        e.add("remove", &RemovedEvent {});
+        e.call("remove", &PathBuf::new());
+
+        assert!(*mock_storage.delete_called.borrow());
     }
 }

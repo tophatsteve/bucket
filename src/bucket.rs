@@ -94,6 +94,7 @@ mod tests {
     impl storage::Storage for MockStorage {
         fn upload(&self, blob_name: &str, data: Vec<u8>) {}
         fn download(&self, p: &PathBuf) {}
+        fn delete(&self, blob_name: &str) {}
     }
 
     struct MockFileSystem {
