@@ -69,6 +69,10 @@ impl PathEventHandler for RemovedEvent {
         storage: &storage::Storage,
         file_system: &file_system::FileSystem,
     ) {
+        trace!("Removing {:?}, is_dir {:?}", path, path.is_dir());
+        if path.is_dir() {
+            return;
+        }
         let blob_name = file_system.get_blob_name(path);
         storage.delete(&blob_name);
     }
