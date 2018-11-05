@@ -34,8 +34,16 @@ before_script:
   - cargo install-update -a # update outdated cached binaries  
 script:
   - cargo test
-  - cargo fmt -- --check
-  - cargo clippy -- -D warnings
+
+jobs:
+  include:
+    - stage: checks
+      script:
+      - cargo fmt -- --check
+      - cargo clippy -- -D warnings
+      rust: stable        
+
+
 
 after_success:
 # measure code coverage and upload to coveralls.io
