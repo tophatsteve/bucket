@@ -1,7 +1,3 @@
-extern crate failure;
-extern crate notify;
-extern crate sentry;
-
 use super::event_handlers::{CreatedEvent, EventHandler, RemovedEvent, UpdatedEvent};
 use super::file_system;
 use super::storage;
