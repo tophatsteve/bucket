@@ -70,6 +70,11 @@ impl PathEventHandler for RemovedEvent {
         file_system: &file_system::FileSystem,
     ) {
         let blob_name = file_system.get_blob_name(path);
+
+        // if delete returns a 404:
+        //     list all blobs starting with blob_name/
+        //     loop through list, calling delete on each item (url encode item name)
+
         storage.delete(&blob_name);
     }
 }
@@ -117,6 +122,9 @@ mod tests {
         }
         fn delete(&self, blob_name: &str) {
             *self.delete_called.borrow_mut() = true;
+        }
+        fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
+            Vec::new()
         }
     }
 

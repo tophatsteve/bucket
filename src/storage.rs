@@ -12,6 +12,7 @@ pub trait Storage {
     fn upload(&self, &str, Vec<u8>);
     fn download(&self, &PathBuf);
     fn delete(&self, &str);
+    fn list_folder_blobs(&self, &str) -> Vec<String>;
 }
 
 pub struct AzureStorage {
@@ -70,27 +71,8 @@ impl Storage for AzureStorage {
             Ok(_) => (),
         };
     }
-}
 
-impl AzureStorage {
-    pub fn new(config: &bucket::Config) -> AzureStorage {
-        AzureStorage {
-            storage_account: config.storage_account.clone(),
-            account_key: config.account_key.clone(),
-            root_container_name: config.root_container_name.clone(),
-        }
-    }
-
-    fn delete_folder(&self, blob_name: &str) {
-        let blobs_to_delete = self.list_blobs_by_folder(blob_name);
-        for blob in blobs_to_delete {
-            let encoded_blob_name: String =
-                utf8_percent_encode(&blob, DEFAULT_ENCODE_SET).collect();
-            self.delete(&encoded_blob_name);
-        }
-    }
-
-    fn list_blobs_by_folder(&self, blob_name: &str) -> Vec<String> {
+    fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
         let mut blobs = Vec::<String>::new();
         let folder_name = format!("{}/", blob_name);
         let mut core = Core::new().unwrap();
@@ -112,6 +94,25 @@ impl AzureStorage {
         match r {
             Err(_) => Vec::<String>::new(),
             Ok(o) => o,
+        }
+    }
+}
+
+impl AzureStorage {
+    pub fn new(config: &bucket::Config) -> AzureStorage {
+        AzureStorage {
+            storage_account: config.storage_account.clone(),
+            account_key: config.account_key.clone(),
+            root_container_name: config.root_container_name.clone(),
+        }
+    }
+
+    fn delete_folder(&self, blob_name: &str) {
+        let blobs_to_delete = self.list_folder_blobs(blob_name);
+        for blob in blobs_to_delete {
+            let encoded_blob_name: String =
+                utf8_percent_encode(&blob, DEFAULT_ENCODE_SET).collect();
+            self.delete(&encoded_blob_name);
         }
     }
 

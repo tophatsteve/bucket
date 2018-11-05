@@ -91,6 +91,9 @@ mod tests {
         fn upload(&self, blob_name: &str, data: Vec<u8>) {}
         fn download(&self, p: &PathBuf) {}
         fn delete(&self, blob_name: &str) {}
+        fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
+            Vec::new()
+        }
     }
 
     struct MockFileSystem {
