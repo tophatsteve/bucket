@@ -6,6 +6,7 @@ use futures::future::*;
 use hyper::StatusCode;
 use std::path::PathBuf;
 use tokio_core::reactor::Core;
+use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 
 pub trait Storage {
     fn upload(&self, &str, Vec<u8>);
@@ -63,8 +64,7 @@ impl Storage for AzureStorage {
                 if h.status_code() == StatusCode::NOT_FOUND =>
             {
                 // if it is not found then we may be deleting a folder
-                let l = self.list_blobs_by_folder(blob_name);
-                trace!("blobs to delete {:?}", l);
+                self.delete_folder(blob_name);
             }
             Err(e) => trace!("Error deleting {} - {:?}", blob_name, e),
             Ok(_) => (),
@@ -81,7 +81,14 @@ impl AzureStorage {
         }
     }
 
-    fn delete_folder(&self, blob_name: &str) {}
+    fn delete_folder(&self, blob_name: &str) {
+        let blobs_to_delete = self.list_blobs_by_folder(blob_name);
+        for blob in blobs_to_delete {
+            let encoded_blob_name: String =
+                utf8_percent_encode(&blob, DEFAULT_ENCODE_SET).collect();
+            self.delete(&encoded_blob_name);
+        }
+    }
 
     fn list_blobs_by_folder(&self, blob_name: &str) -> Vec<String> {
         let mut blobs = Vec::<String>::new();

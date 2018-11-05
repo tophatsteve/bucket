@@ -20,9 +20,9 @@ bucket needs the following environment variables setting in order to work:
 - [x] Upload individual files to blob storage
 - [x] Upload folders to blob storage
 - [x] Delete individual files from blob storage
-- [ ] Delete folders from blob storage
+- [x] Delete folders from blob storage
 - [ ] Monitor blob storage account for changes
 - [ ] Download new files from blob storage
 - [ ] Download new folders from blob storage
 - [ ] Remove local files that have been removed from blob storage
-- [ ] Remove loca folders that have been removed from blob storage
+- [ ] Remove local folders that have been removed from blob storage
