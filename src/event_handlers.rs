@@ -56,7 +56,7 @@ impl PathEventHandler for CreatedEvent {
         }
         let blob_name = file_system.get_blob_name(path);
         let file_content = file_system.get_file_contents(path);
-        storage.upload(&blob_name, file_content);
+        storage.upload(&blob_name, file_content).unwrap();
     }
 }
 
@@ -73,7 +73,7 @@ impl PathEventHandler for RemovedEvent {
 
         match storage.delete(&blob_name) {
             Err(storage::StorageError::PathNotFound) => {
-                let blobs_to_delete = storage.list_folder_blobs(&blob_name);
+                let blobs_to_delete = storage.list_folder_blobs(&blob_name).unwrap();
                 for blob in blobs_to_delete {
                     match storage.delete(&file_system.encode_file_name(&blob_name)) {
                         Err(e) => trace!("{}", e),
@@ -130,8 +130,9 @@ mod tests {
     }
 
     impl storage::Storage for MockStorage {
-        fn upload(&self, blob_name: &str, data: Vec<u8>) {
+        fn upload(&self, blob_name: &str, data: Vec<u8>) -> Result<(), storage::StorageError> {
             *self.upload_called.borrow_mut() = true;
+            Ok(())
         }
         fn download(&self, p: &PathBuf) {
             *self.download_called.borrow_mut() = true;
@@ -145,9 +146,9 @@ mod tests {
 
             Ok(())
         }
-        fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
+        fn list_folder_blobs(&self, blob_name: &str) -> Result<Vec<String>, storage::StorageError> {
             *self.list_folder_blobs_called.borrow_mut() = true;
-            Vec::new()
+            Ok(Vec::new())
         }
     }
 

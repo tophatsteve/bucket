@@ -88,13 +88,15 @@ mod tests {
     }
 
     impl storage::Storage for MockStorage {
-        fn upload(&self, blob_name: &str, data: Vec<u8>) {}
+        fn upload(&self, blob_name: &str, data: Vec<u8>) -> Result<(), storage::StorageError> {
+            Ok(())
+        }
         fn download(&self, p: &PathBuf) {}
         fn delete(&self, blob_name: &str) -> Result<(), storage::StorageError> {
             Ok(())
         }
-        fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
-            Vec::new()
+        fn list_folder_blobs(&self, blob_name: &str) -> Result<Vec<String>, storage::StorageError> {
+            Ok(Vec::new())
         }
     }
 
