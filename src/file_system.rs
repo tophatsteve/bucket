@@ -7,6 +7,7 @@ use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 pub trait FileSystem {
     fn get_blob_name(&self, p: &PathBuf) -> String;
     fn get_file_contents(&self, p: &PathBuf) -> Vec<u8>;
+    fn encode_file_name(&self, f: &str) -> String;
 }
 
 pub struct LocalFileSystem {
@@ -17,8 +18,12 @@ impl FileSystem for LocalFileSystem {
     fn get_blob_name(&self, p: &PathBuf) -> String {
         let root = Path::new(&self.root_folder);
         let stripped = p.strip_prefix(root).unwrap();
+        self.encode_file_name(stripped.to_str().unwrap())
+    }
+
+    fn encode_file_name(&self, f: &str) -> String {
         // convert Windows paths to standard format
-        let normalized = stripped.to_str().unwrap().replace("\\", "/");
+        let normalized = f.replace("\\", "/");
         utf8_percent_encode(&normalized, DEFAULT_ENCODE_SET).collect()
     }
 

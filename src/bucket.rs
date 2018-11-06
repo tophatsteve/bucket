@@ -90,7 +90,9 @@ mod tests {
     impl storage::Storage for MockStorage {
         fn upload(&self, blob_name: &str, data: Vec<u8>) {}
         fn download(&self, p: &PathBuf) {}
-        fn delete(&self, blob_name: &str) {}
+        fn delete(&self, blob_name: &str) -> Result<(), storage::StorageError> {
+            Ok(())
+        }
         fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
             Vec::new()
         }
@@ -118,6 +120,9 @@ mod tests {
         fn get_file_contents(&self, p: &PathBuf) -> Vec<u8> {
             *self.get_file_contents_called.borrow_mut() = true;
             Vec::new()
+        }
+        fn encode_file_name(&self, f: &str) -> String {
+            String::from("")
         }
     }
 

@@ -3,7 +3,6 @@
 
 extern crate azure_sdk_for_rust;
 extern crate env_logger;
-extern crate failure;
 extern crate futures;
 extern crate hyper;
 extern crate hyper_tls;
@@ -14,6 +13,8 @@ extern crate log;
 extern crate md5;
 extern crate tokio_core;
 extern crate url;
+#[macro_use]
+extern crate failure;
 
 mod bucket;
 mod event_handlers;

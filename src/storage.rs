@@ -6,12 +6,21 @@ use futures::future::*;
 use hyper::StatusCode;
 use std::path::PathBuf;
 use tokio_core::reactor::Core;
-use url::percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
+
+#[derive(Debug, Fail)]
+pub enum StorageError {
+    #[fail(display = "The specified path was not found")]
+    PathNotFound,
+    #[fail(display = "Could not connect to the server - {:?}", error)]
+    ConnectionError { error: AzureError },
+    #[fail(display = "An unknown error has occurred - {:?}", error)]
+    UnknownError { error: AzureError },
+}
 
 pub trait Storage {
     fn upload(&self, &str, Vec<u8>);
     fn download(&self, &PathBuf);
-    fn delete(&self, &str);
+    fn delete(&self, &str) -> Result<(), StorageError>;
     fn list_folder_blobs(&self, &str) -> Vec<String>;
 }
 
@@ -45,7 +54,7 @@ impl Storage for AzureStorage {
         trace!("Downloading - {:?}", p);
     }
 
-    fn delete(&self, blob_name: &str) {
+    fn delete(&self, blob_name: &str) -> Result<(), StorageError> {
         trace!("Deleting - {:?}", blob_name);
 
         let mut core = Core::new().unwrap();
@@ -64,12 +73,14 @@ impl Storage for AzureStorage {
             Err(AzureError::UnexpectedHTTPResult(ref h))
                 if h.status_code() == StatusCode::NOT_FOUND =>
             {
-                // if it is not found then we may be deleting a folder
-                self.delete_folder(blob_name);
+                Err(StorageError::PathNotFound)
             }
-            Err(e) => trace!("Error deleting {} - {:?}", blob_name, e),
-            Ok(_) => (),
-        };
+            Err(e) => {
+                trace!("Error deleting {} - {:?}", blob_name, e);
+                Err(StorageError::UnknownError { error: e })
+            }
+            Ok(_) => Ok(()),
+        }
     }
 
     fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
@@ -89,9 +100,9 @@ impl Storage for AzureStorage {
                 blobs
             });
 
-        let r = core.run(future);
+        let result = core.run(future);
 
-        match r {
+        match result {
             Err(_) => Vec::<String>::new(),
             Ok(o) => o,
         }
@@ -104,15 +115,6 @@ impl AzureStorage {
             storage_account: config.storage_account.clone(),
             account_key: config.account_key.clone(),
             root_container_name: config.root_container_name.clone(),
-        }
-    }
-
-    fn delete_folder(&self, blob_name: &str) {
-        let blobs_to_delete = self.list_folder_blobs(blob_name);
-        for blob in blobs_to_delete {
-            let encoded_blob_name: String =
-                utf8_percent_encode(&blob, DEFAULT_ENCODE_SET).collect();
-            self.delete(&encoded_blob_name);
         }
     }
 
