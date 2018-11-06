@@ -56,7 +56,9 @@ impl PathEventHandler for CreatedEvent {
         }
         let blob_name = file_system.get_blob_name(path);
         let file_content = file_system.get_file_contents(path);
-        storage.upload(&blob_name, file_content).unwrap();
+        if let Err(e) = storage.upload(&blob_name, file_content) {
+            trace!("Error uploading - {}", e);
+        }
     }
 }
 
@@ -75,13 +77,12 @@ impl PathEventHandler for RemovedEvent {
             Err(storage::StorageError::PathNotFound) => {
                 let blobs_to_delete = storage.list_folder_blobs(&blob_name).unwrap();
                 for blob in blobs_to_delete {
-                    match storage.delete(&file_system.encode_file_name(&blob_name)) {
-                        Err(e) => trace!("{}", e),
-                        Ok(_) => (),
+                    if let Err(e) = storage.delete(&file_system.encode_file_name(&blob_name)) {
+                        trace!("Error deleting folder content - {}", e);
                     }
                 }
             }
-            Err(e) => trace!("{}", e),
+            Err(e) => trace!("Error deleting - {}", e),
             Ok(_) => (),
         };
     }
