@@ -109,6 +109,8 @@ mod tests {
         upload_called: RefCell<bool>,
         download_called: RefCell<bool>,
         delete_called: RefCell<bool>,
+        list_folder_blobs_called: RefCell<bool>,
+        return_path_not_found_error: RefCell<bool>,
     }
 
     impl MockStorage {
@@ -117,7 +119,13 @@ mod tests {
                 upload_called: RefCell::new(false),
                 download_called: RefCell::new(false),
                 delete_called: RefCell::new(false),
+                list_folder_blobs_called: RefCell::new(false),
+                return_path_not_found_error: RefCell::new(false),
             }
+        }
+
+        fn set_return_path_not_found_error(&self, f: bool) {
+            *self.return_path_not_found_error.borrow_mut() = f;
         }
     }
 
@@ -130,9 +138,15 @@ mod tests {
         }
         fn delete(&self, blob_name: &str) -> Result<(), storage::StorageError> {
             *self.delete_called.borrow_mut() = true;
+
+            if *self.return_path_not_found_error.borrow() {
+                return Err(storage::StorageError::PathNotFound);
+            }
+
             Ok(())
         }
         fn list_folder_blobs(&self, blob_name: &str) -> Vec<String> {
+            *self.list_folder_blobs_called.borrow_mut() = true;
             Vec::new()
         }
     }
@@ -250,5 +264,18 @@ mod tests {
         e.call("remove", &PathBuf::new());
 
         assert!(*mock_storage.delete_called.borrow());
+    }
+
+    #[test]
+    fn test_remove_non_existing_file_calls_list_folder_blobs() {
+        let mock_file_system = MockFileSystem::new();
+        let mock_storage = MockStorage::new();
+        mock_storage.set_return_path_not_found_error(true);
+        let mut e = EventHandler::new(&mock_storage, &mock_file_system);
+
+        e.add("remove", &RemovedEvent {});
+        e.call("remove", &PathBuf::new());
+
+        assert!(*mock_storage.list_folder_blobs_called.borrow());
     }
 }
